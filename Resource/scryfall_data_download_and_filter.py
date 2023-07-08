@@ -3,20 +3,18 @@ import os
 import requests
 import shutil
 import certifi
+import sys
 from tqdm import tqdm
 
 print("api call")
 
 # scryflall file download
-def GetScryfallUploadedFile():
+def DownloadScryfallDefaultFile(fileName):
 
-    print("GetScryfallUploadedFile() called")
+    print("DownloadScryfallDefaultFile() called")
 
-    url = "https://api.scryfall.com/bulk-data"
-    targetJson = "default_cards.json"
-    
+    url = "https://api.scryfall.com/bulk-data"    
     response = requests.get(url)
-    fileName = ""
 
     # 응답이 성공적이면
     if response.status_code >= 200 and response.status_code < 300:
@@ -36,20 +34,17 @@ def GetScryfallUploadedFile():
 
                 if download_response.status_code >= 200 and download_response.status_code < 300:
 
-                    if os.path.exists(targetJson):
-                        os.remove(targetJson)
+                    if os.path.exists(fileName):
+                        os.remove(fileName)
 
-                    with open(targetJson, 'wb') as f:
-                        print("file write start fileName : " + targetJson)
+                    with open(fileName, 'wb') as f:
+                        print("file write start fileName : " + fileName)
                         download_response.raw.decode_content = True
                         shutil.copyfileobj(download_response.raw, f)
-
-                    fileName = targetJson
 
                 break
 
     print("GetScryfallUploadedFile() end")
-    return fileName
 
 # json filtering condition
 def json_item_condition(json_item, desired_keys, set_layout, remove_list, oversized_data, image_sub_keys):
@@ -79,7 +74,7 @@ def json_item_condition(json_item, desired_keys, set_layout, remove_list, oversi
 
         return new_item
 
-def StripFile(fileName):
+def StripFile(fileName, result_file_name):
 
     # "set_id" : c1d109bc-ffd8-428f-8d7d-3f8d7e648046
     # "set_name" : Time Spiral
@@ -93,7 +88,6 @@ def StripFile(fileName):
     with open(fileName, 'r', encoding='utf-8') as file:
         data = json.load(file)
 
-    result_file_name = "filtered_card.json"
     set_layout = set()
 
     # 현존하는 레이아웃 종류
@@ -118,6 +112,8 @@ def StripFile(fileName):
         "saga",                             # saga
         "augment",                          # un사리즈 합체 소스 카드 ( host에 붙음 )
         "flip",                             # 구카미 위아래방향 뒤집는 카드
+        "mutate",                           # mutate
+        "prototype",                        # prototype
     ]
 
     # 새로운 레이아웃 추가시 알람을 위함
@@ -154,6 +150,8 @@ def StripFile(fileName):
         if objResult != None:
             filtered_data.append(objResult)
 
+    if os.path.exists(result_file_name):
+        os.remove(result_file_name)
 
     # 결과를 새 JSON 파일에 저장
     with open(result_file_name, 'w') as file:
@@ -161,7 +159,7 @@ def StripFile(fileName):
 
     print(" $$$ ------------------------------------------------------")
     print(" $$$ ------------------------------------------------------")
-    print("every data count : " + str(len(data)))
+    print("every data count : " + str(len(filtered_data)))
 
     printS = ""
     for item in set_layout:
@@ -169,8 +167,8 @@ def StripFile(fileName):
         printS += ", "
 
     print("set layout : " + printS)
-
     print("oversized card count" + str(len(oversized_data)))
+    print("filtered data count : " + str(len(filtered_data)))
 
     # 혹시 추가된 layout이 있는지 검사
     extra_layout = set_layout.difference(exist_layout)
@@ -184,14 +182,54 @@ def StripFile(fileName):
     print("StripFile() finished")
 
 
+
+
+# downloaded file strip
+def StripForUpload(filtered_file_name, upload_file_name):
+
+    print("for uploader - StripAgain() called : " + filtered_file_name)
+
+    with open(filtered_file_name, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+
+    # 필터링할 항목
+    desired_keys = ["id", "name", "set", "collector_number"]
+
+    filtered_data = []
+
+    for item in tqdm(data, desc="Filtering"):
+        new_item = {key: item[key] for key in desired_keys if key in item}
+        filtered_data.append(new_item)
+
+    if os.path.exists(upload_file_name):
+        os.remove(upload_file_name)
+
+    # 결과를 새 JSON 파일에 저장
+    with open(upload_file_name, 'w') as file:
+        json.dump(filtered_data, file)
+
+    print(" $$$ ------------------------------------------------------")
+    print(" $$$ ------------------------------------------------------")
+
+    print("every data count : " + str(len(data)))
+    print("filterfed data count : " + str(len(filtered_data)))
+    print("for uploader - StripAgain() finished")
+
+
 # program 시작
-fileName = GetScryfallUploadedFile()
-root, extension = os.path.splitext(fileName)
+download_file_name = "default_card.json"
+filtered_file_name = "filtered_card.json"
+upload_file_name = "uploader_card.json"
 
-if extension != ".json":
-    print("ext not applyied")
-    quit()
+skip_download = "-ig" in sys.argv  # -ig 옵션이 명령줄 인수에 있는지 확인
 
-StripFile(fileName)
+
+if not skip_download:
+    DownloadScryfallDefaultFile(download_file_name)
+else:
+    print("Due to the '-ig' argument, the download will be skipped.")
+
+StripFile(download_file_name, filtered_file_name)
+StripForUpload(filtered_file_name, upload_file_name)
 
 print("python program finished")
