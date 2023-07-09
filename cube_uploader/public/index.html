@@ -72,10 +72,36 @@
         color: blue;
         text-decoration: underline;
       }
+
+      .loader {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          border: 16px solid #f3f3f3;
+          border-radius: 50%;
+          border-top: 16px solid #3498db;
+          width: 120px;
+          height: 120px;
+          -webkit-animation: spin 2s linear infinite; 
+          animation: spin 2s linear infinite;
+      }
+
+      @-webkit-keyframes spin {
+          0% { -webkit-transform: rotate(0deg); }
+          100% { -webkit-transform: rotate(360deg); }
+      }
+
+      @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+      }
+
   </style>
 
   </head>
   <body>
+    <div id="loader" class="loader" style="display:none;"></div>
       <div class="container">
         <div class="input-container">
             <button id="googleSignInButton" onclick="signIn()">Sign in with Google</button>
@@ -90,7 +116,7 @@
 
                     <input type="button" value="Submit" onclick="submitForm()">
                 </form>
-                <input type="file" id="fileInput" name="fileInput" accept=".csv,.json">
+                <input type="file" id="fileInput" name="fileInput" accept=".csv">
             </div>
         </div>
 
@@ -113,17 +139,6 @@
                 <p></p>
                 <a href=""></a>
               </div>
-              <div class="card" id = "cube3">
-                <h3></h3>
-                <p></p>
-                <a href=""></a>
-              </div>
-              <div class="card" id = "cube4">
-                <h3></h3>
-                <p></p>
-                <a href=""></a>
-              </div>
-
           </div>
             
       </div>
@@ -133,7 +148,7 @@
 
     <script>
 
-    const getMaxCubeCountPerUser = () => 5;
+    const getMaxCubeCountPerUser = () => 3;
 
     document.addEventListener('DOMContentLoaded', function() {
       const loadEl = document.querySelector('#load');
@@ -172,49 +187,31 @@
       }
     });
 
-    function getFileVersion(filename) {
-
-      console.log("want to get file version : " + filename);
-
-      let ar = filename.split('_');
-
-      if( ar.length < 2 )
-      {
-        return NaN;
-      }
-
-      let versionString = ar[2].substring(0, 5);
-      let versionNumber = parseInt(versionString, 10);
-
-      console.log("maked file version : " + versionNumber.toString());
-      return versionNumber;
-    }
-
-    function RecvJsonDataFromStorage(data, fileVersion)
+    function SaveServerJsonToIndexedDB(data, updatedTimeOnServer)
     {
-      // 데이터베이스를 열거나 생성합니다.
-      var openRequest = indexedDB.open("ACHCube", fileVersion);
+        var openRequest = indexedDB.open("ACHUploaderDB");
 
-      openRequest.onupgradeneeded = function(event) {
-        var db = openRequest.result;
+        openRequest.onupgradeneeded = function(event) {
+          var db = openRequest.result;
 
-        // 새로운 버전의 DB가 요청되었을 때, 이전 버전의 object store를 삭제하고 새로운 object store를 생성합니다.
-        if (db.objectStoreNames.contains('CubeJson')) {
-          db.deleteObjectStore('CubeJson');
-        }
-
-        var objectStore = db.createObjectStore('CubeJson', {autoIncrement: true});
-        objectStore.transaction.oncomplete = function(event) {
-          // 새로 생성된 object store에 JSON 데이터를 저장합니다.
-          var transaction = db.transaction("CubeJson", "readwrite");
-          var newObjectStore = transaction.objectStore("CubeJson");
-
-          // JSON 객체를 반복하며 각각의 객체를 object store에 추가합니다.
-          for (var i in data) {
-            newObjectStore.add(data[i]);
+          if (!db.objectStoreNames.contains('FirebaseData')) {
+            db.createObjectStore('FirebaseData');
           }
         };
-      };
+
+        openRequest.onsuccess = function(event) {
+          var db = openRequest.result;
+          var transaction = db.transaction("FirebaseData", "readwrite");
+          var objectStore = transaction.objectStore("FirebaseData");
+
+          // 기존에 있는 항목을 덮어쓰기 위해 put 메소드를 사용
+          objectStore.put(data, "Cards");
+          objectStore.put(updatedTimeOnServer, "UpdateTime");
+        };
+
+        openRequest.onerror = function(event) {
+          console.log("Error opening database:", event.target.errorCode);
+        };
     }
 
     function SuccessReady()
@@ -223,32 +220,61 @@
       document.getElementById('uploadContainer').style.display = 'block';
     }
 
-    function GetJsonDataFromStorage(fileVersion) {
+    function GetJsonDataFromStorage(fileRef, updatedTimeOnServer) {
+
       return new Promise(function(resolve, reject) {
-        var openRequest = indexedDB.open("ACHCube", fileVersion);
+
+        if( updatedTimeOnServer == null )
+        {
+          reject(Error("no recv server update time"));
+          return;
+        }
+
+        let openRequest = indexedDB.open("ACHUploaderDB");
 
         openRequest.onsuccess = function(event) {
-          var db = openRequest.result;
+          let db = openRequest.result;
 
-          if( db.objectStoreNames.contains('CubeJson') == false )
+          if( db.objectStoreNames.contains("FirebaseData") == false )
           {
             reject(Error("not matched version"));
             return;
           }
 
-          var transaction = db.transaction("CubeJson");
-          var objectStore = transaction.objectStore("CubeJson");
-          var request = objectStore.getAll();
+          let transaction = db.transaction("FirebaseData", "readonly");
+          let objectStore = transaction.objectStore("FirebaseData");
 
-          request.onsuccess = function(event) {
-            // 모든 데이터를 성공적으로 받아왔을 때, 그 데이터를 resolve합니다.
-            resolve(request.result);
-          };
+          let timeReq = objectStore.get("UpdateTime");
 
-          request.onerror = function(event) {
-            // 데이터를 받아오는 데 실패했을 때, 에러를 reject합니다.
-            reject(Error("Error getting data from IndexedDB"));
-          };
+          timeReq.onsuccess = function(event)
+          {
+            let updatedTimeOnClient = timeReq.result;
+            
+            if(updatedTimeOnClient) {
+                if(updatedTimeOnClient < updatedTimeOnServer) {
+                  reject(Error("Server has more recent data"));
+                } else {
+                  let request = objectStore.get("Cards");
+
+                  request.onsuccess = function(event) {
+                    // 모든 데이터를 성공적으로 받아왔을 때, 그 데이터를 resolve합니다.
+                    resolve(request.result);
+                  };
+
+                  request.onerror = function(event) {
+                    // 데이터를 받아오는 데 실패했을 때, 에러를 reject합니다.
+                    reject(Error("Error getting data from IndexedDB"));
+                  };
+                }
+            } else {
+              reject(Error("Error getting time data from IndexedDB"));                
+            } 
+          }
+
+          timeReq.onerror = function(event)
+          {
+            reject(Error("Error getting time data from IndexedDB"));
+          }
         };
 
         openRequest.onupgradeneeded = function(event) {
@@ -258,17 +284,32 @@
         openRequest.onerror = function(event) {
           // 데이터베이스를 열지 못했을 때, 에러를 reject합니다.
           reject(Error("Error opening database"));
-        };
+        };        
       });
     }
 
     // when file list ok. uploader file download & save to DB
-    function FileDownload(fileRef, fileVersion)
+    function FileDownload(fileRef)
     {
-      GetJsonDataFromStorage(fileVersion)
+      console.log("FileDownload called !!!");
+
+      let updatedTimeOnServer = null; 
+
+      // recv file meta data
+      fileRef.getMetadata().then((metadata) => {
+        updatedTimeOnServer = metadata.updated;
+
+        console.log("recv meta update time : " + updatedTimeOnServer.toString());
+      })
+      .catch(function(error){
+        console.log("fileRef get meta data error : " + error.toString());
+        updatedTimeOnServer = null;
+      });
+
+      GetJsonDataFromStorage(fileRef, updatedTimeOnServer)
         .then(function(data) {
 
-          console.log("storage cache hit!! not down" + data.length.toString());
+          console.log("storage cache hit!! do not download file" + data.length.toString());
 
           firebase.ach.server.bIsRecvServerJson = true;
           firebase.ach.server.serverJson = data;
@@ -295,9 +336,8 @@
                         firebase.ach.server.serverJson = data;
 
                         console.log("downloaded data count : " + data.length.toString());
-                        console.log("cached file version " + firebase.ach.file.version.toString());
 
-                        RecvJsonDataFromStorage(data, firebase.ach.file.version);
+                        SaveServerJsonToIndexedDB(data, updatedTimeOnServer);
                         SuccessReady();
                       };
                       reader.readAsText(blob);                
@@ -314,10 +354,8 @@
 
                   firebase.ach.server.bIsRecvServerJson = false;
                   firebase.ach.server.serverJson = null;
-                });   
-          
-        });
-      console.log("FileDownload called !!!")             
+                });         
+        }); 
     }
 
     function HTML_SetCubeInfoEach(a_nIndex, name, desc, desc_url)
@@ -333,8 +371,8 @@
         cubeElement.querySelector('h3').textContent = "empty slot"
         cubeElement.querySelector('p').textContent = "";
 
-          cubeElement.querySelector('a').setAttribute('href', "");
-          cubeElement.querySelector('a').textContent = "";
+        cubeElement.querySelector('a').setAttribute('href', "");
+        cubeElement.querySelector('a').textContent = "";
       }
       else
       {
@@ -385,7 +423,7 @@
       firebase.auth().onAuthStateChanged(function(user)
       {
         if (user) {
-          console.log("firebase auth get !!!! : " + user.uid);
+          console.log("firebase auth get ok");
         } else {
           console.log("firebase auth is lost so sad...");
         }
@@ -453,7 +491,6 @@
 
                     firebase.ach.firebase.cube_infos[_index] = cubeInfo;
                     HTML_SetCubeInfo(_index, cubeInfo);
-                    
 
                     console.log(" ------------------------------------------------ ");
                     console.log("cube exist : " + _index.toString());
@@ -482,26 +519,15 @@
         const storageRef = storage.ref();
         const folderRef = storageRef.child('carddata');
 
-        // Find all the prefixes and items.
         folderRef.listAll()
           .then((res) => {            
             res.items.forEach((itemRef) => {
 
               console.log("iterate carddata storage folder : " + itemRef.name)
 
-              if(itemRef.name.includes('uploader_card') == true)
+              if(itemRef.name.includes('uploader_card.json') == true)
               {
-                let dataVersion = getFileVersion(itemRef.name);
-
-                if (dataVersion === NaN)
-                {
-                    console.log("filename error");
-                    return;
-                }
-
-                firebase.ach.file.version = dataVersion;
-
-                FileDownload(storageRef.child("carddata/" + itemRef.name), dataVersion);
+                FileDownload(storageRef.child("carddata/" + itemRef.name));
               }
             });
           }).catch((error) => {
@@ -531,7 +557,7 @@
       });
     }
 
-    // .json, .csv file parse
+    // cube cobra .csv file parse
     function parseFile(file)
     {
       return new Promise((resolve, reject) => {
@@ -543,17 +569,41 @@
           if (file.name.endsWith('.csv')) {
             Papa.parse(contents, {
               header: true,
+              quoteChar: '"',
+              skipEmptyLines: true,
               transformHeader: header => header.toLowerCase(),
               complete: function(results) {
-                if ('name' in results.data[0] && 'set' in results.data[0]) {
+                if ('name' in results.data[0]) {
                   const json = results.data.map(row => {
+                      let rowData = {};
 
-                      const rowData = {};
-
-                      if ((row['name'] && row['name'] != "") && (row['set'] && row['set'] != ""))
-                        {
+                      if (row['name'] && row['name'] != "")
+                      {
+                        rowData.id = "";
                         rowData.name = row['name'];
-                        rowData.set = row['set'];
+                        rowData.set = "";
+                        rowData.isFoil = false;
+                        rowData.collector_number = 0;
+
+                        if (row['set'] && row['set'] != "")
+                        {
+                          rowData.set = row['set'];
+                        }
+                        
+                        // CubeCobra .csv Finish => 포일여부                         
+                        if (row['finish'] && row['finish'] == "Foil")
+                        {
+                          rowData.isFoil = true;
+                        }
+
+                        if (row['collector number'] && row['collector number'] != "") {
+                          if(/\\u([\d\w]{4})/g.test(row['collector number'])) {
+                              rowData.collector_number = row['collector number'].replace(/\\u([\d\w]{4})/gi, 
+                                  (match, grp) => String.fromCharCode(parseInt(grp, 16)));
+                          } else {
+                              rowData.collector_number = row['collector number'];
+                          }
+                      }
                       }
 
                       return rowData;
@@ -565,52 +615,12 @@
                 }
               }
             });
-          } else if (file.name.endsWith('.json')) {
-            let jsonData = JSON.parse(contents);
-            
-            if (Array.isArray(jsonData)) {
-              const json = jsonData.map(item => {
-
-                const rowData = {};
-
-                let name = null;
-                let set = null;
-
-                if(item['name']) {
-                  name = item['name'];
-                } else if(item['NAME']) {
-                  name = item['NAME'];
-                } else if(item['Name']) {
-                  name = item['Name'];
-                }
-
-                if(item['set']) {
-                  set = item['set'];
-                } else if(item['SET']) {
-                  set = item['SET'];
-                } else if(item['Set']) {
-                  set = item['Set'];
-                }
-
-                if( name && set )
-                {
-                  rowData.name = name;
-                  rowData.set = set;
-                };
-
-                return rowData;
-              });
-      
-              resolve(json.filter(obj => Object.keys(obj).length !== 0));
-            } else {
-              reject('JSON file is not in the expected format.');
-            }
           } else {
             reject('Unsupported file type.');
           }
         };
 
-        reader.readAsText(file);
+        reader.readAsText(file, "UTF-8");
       });
     }
 
@@ -626,6 +636,16 @@
     {
       return set1 === set2 && isSameCard_onlyName(name1, name2); 
     }
+
+    function isSameCard_withNum(name1, num1, name2, num2)
+    {
+      return num1 == num2 && isSameCard_onlyName(name1, name2); 
+    }
+
+    function isSameCard_fullData(name1, set1, num1, name2, set2, num2)
+    {
+      return num1 == num2 && isSameCard_onlyName(name1, set1, name2, set2); 
+    }
     
     // upload file check
     function filterIds(data, userJson) {
@@ -634,23 +654,116 @@
 
       userJson.forEach(userItem => {
         var match = data.find(
-          dataItem => isSameCard(dataItem.name, dataItem.set, userItem.name, userItem.set)
+          
+          (dataItem) => 
+          {            
+            // name, number정도면 거의 찾을 확률이 높아서 이렇게 작업
+            let bMatch = isSameCard_fullData(dataItem.name, dataItem.set, dataItem.collector_number,
+            userItem.name, userItem.set, userItem.collector_number);
+
+            if( bMatch == true)
+            {
+              userItem.id = dataItem.id;
+            }
+            else{
+              // console.log("dataItem.set : " + dataItem.set);
+              // console.log("dataItem.set : " + dataItem.set);
+            }
+
+            return bMatch;
+          }
         );
         
         if (match) {
-          // result.push({id: match.id});
-          result.push({name: match.name, set: match.set});
+          result.push({
+            id: userItem.id,
+            name: userItem.name,
+            set: userItem.set,
+            num: userItem.collector_number,
+            isFoil: userItem.isFoil
+          });
         } else {
 
-          console.log("-----------------------------------------------------");          
-          console.log("user item : " + userItem.name + " / " + userItem.set);
-          console.log("data item : " + dataItem.name + " / " + dataItem.set);
+            // name, set로 다시 찾음 ( 홀리데이카드 예외처리 )
+            var match2 = data.find(
+               (dataItem) => 
+               {            
+                 let bMatch = isSameCard(dataItem.name, dataItem.set, userItem.name, userItem.set);
+ 
+                 if( bMatch == true)
+                 {
+                   userItem.id = dataItem.id;
+                 }
+ 
+                 return bMatch;
+               }
+            )
 
-          notFoundItems.push(userItem.name + " : " + userItem.set);
-        }
+            if( match2 )
+            {
+              result.push({
+                id: userItem.id,
+                name: userItem.name,
+                set: userItem.set,
+                num: userItem.collector_number,
+                isFoil: userItem.isFoil
+              });
+            }
+            else{
+
+              console.log("not found");
+              console.log(userItem);
+              notFoundItems.push(userItem);
+            }
+
+          
+
+//           var match3 = data.find(
+//               (dataItem) => 
+//               {            
+//                 let bMatch = isSameCard(dataItem.name, userItem.name);
+// 
+//                 if( bMatch == true)
+//                 {
+//                   userItem.id = dataItem.id;
+//                 }
+// 
+//                 return bMatch;
+//               }
+//             );
+// 
+//             if (match3)
+//             {
+//               result.push({
+//               id: userItem.id,
+//               name: userItem.name,
+//               set: userItem.set,
+//               num: userItem.collector_number,
+//               isFoil: userItem.isFoil
+//               });
+//             }
+//             else
+//             {
+//               console.log("not found");
+//               console.log(userItem);
+//               notFoundItems.push(userItem);
+//             }
+          }
       });
 
       return {result: result, notFound: notFoundItems};
+    }
+
+    function ResetFileUI()
+    {
+      if( document.getElementById('fileInput').value )
+        {
+          document.getElementById('fileInput').value = '';
+        }
+    }
+
+    function setVisibilitySpinner(bVisible) {
+      document.getElementById('loader').style.display = (bVisible == true) ? "block" : "none";
     }
 
     function OnFileSelectCallback(evt) {
@@ -658,6 +771,7 @@
       if( firebase.ach.server.bIsRecvServerJson == false )
       {
         alert("server에서 card data를 받지 못했습니다. 다시 접속해서 로그인 해주세요");
+        ResetFileUI();
         return;
       }
 
@@ -665,55 +779,70 @@
 
       let file = evt.target.files[0];
 
+      setVisibilitySpinner(true);
+
       parseFile(file).then(json => {
 
-        if( json == null || json.length < 90 )
+        if( json == null )
         {
-          alert("큐브 사이즈는 90장 미만이 될 수 없습니다.");
+          setVisibilitySpinner(false);
+
+          alert("file parse error!");
+          ResetFileUI();
           return;
         }
 
         let serverJson = firebase.ach.server.serverJson;
         var filteredData = filterIds(serverJson, json);
+        firebase.ach.upload.filteredData = filteredData;
 
         // data에서 찾을 수 없는 항목들
-        var notFoundItems = filteredData.notFound;
+        let notFoundCount = filteredData.notFound.length;
 
-        if ( notFoundItems != null && notFoundItems.length > 0 )
+        if ( notFoundCount > 0 )
         {
-          alert("server data에 없는 파일이 있습니다. 이 내용은 제외한 상태로 업데이트 됩니다");
-
-          let resultString = "";
-          for( var s of notFoundItems)
+          let resultString = "not found list : \n";
+          for (let i=0; i<notFoundCount; ++i)
           {
-            resultString.concat(s);
-            resultString.concat("\n");
+            resultString += filteredData.notFound[i].name;
+            resultString += "\n";
           }
 
-          alert(resultString);
+          alert("server data에 없는 파일이 있습니다. 이 내용은 제외한 상태로 업데이트 됩니다.\n" + resultString);
         }
 
         if( filteredData.result == null || filteredData.result.length < 90 )
         {
+          setVisibilitySpinner(false);
+
           alert("큐브 사이즈는 90장 미만이 될 수 없습니다.");
+          ResetFileUI();
+          return;
+        }
+
+        if( filteredData.result.length > 2400 )
+        {
+          setVisibilitySpinner(false);
+
+          alert("지원하는 큐브 사이즈는 2400장 까지입니다. - " + filteredData.result.length.toString());
+          ResetFileUI();
           return;
         }
 
         firebase.ach.upload.bIsSetFile = true;
-
-        // name, set의 배열
         firebase.ach.upload.json = filteredData.result;
 
         console.log("result filtered list " + filteredData.result.length.toString());
-        console.log("result error list " + notFoundItems.length.toString());
+        console.log("result not found list " + notFoundCount);
 
+        setVisibilitySpinner(false);
       }).catch(error => {
         console.error('Error:', error);
-        document.getElementById('fileInput').value = "에러가 있는 파일입니다.";
+        setVisibilitySpinner(false);
+        ResetFileUI();
       });
     }
 
-    // when file upload button clicked
     document.getElementById('fileInput').addEventListener('change', OnFileSelectCallback);  
 
     function createFirebaseKeyFromEmail(email) {
@@ -721,10 +850,8 @@
             throw new Error("Invalid argument. 'email' must be a string.");
         }
 
-        // 대체할 문자열 목록을 만듭니다.
         const forbiddenChars = ['.', '#', '$', '[', ']'];
         
-        // replace() 함수와 정규 표현식을 사용하여 이메일 주소의 모든 특수 문자를 쉼표로 대체합니다.
         let safeId = email;
         for (let i = 0; i < forbiddenChars.length; i++) {
             const char = forbiddenChars[i];
@@ -733,6 +860,16 @@
         }
 
         return safeId;
+    }
+
+    function make_tag_string(item)
+    {
+      // tag : 
+      // [--] : language
+      // P : proxy
+      // F : foil
+
+      return (item.isFoil == true) ? "F" : "";
     }
 
     function upload_to_realTimeDB(a_sOwner, a_nIndex, a_nOldCubeIndex, a_sCubeName, a_sInfo, a_sDesc_url, a_arJson)
@@ -778,9 +915,16 @@
         owner       : a_sOwner,
       };
 
+      const simplified_arJson = a_arJson.map(item => {
+          return {
+              id: item.id,
+              tag: make_tag_string(item)
+          };
+      });
+
       const card_list = 
       {
-        list        : a_arJson
+        list        : simplified_arJson
       };
 
       console.log(cube_data);
@@ -802,7 +946,7 @@
               HTML_SetCubeInfo(a_nIndex, cube_data);
 
               console.log('All data uploaded successfully.');
-            }         
+            }
           )
           .catch((error) => console.error('Failed to upload data:', error));
 
@@ -852,16 +996,25 @@
           }
         }
 
-        if( index >= 5 )
+        if( index >= getMaxCubeCountPerUser() )
         {
-          alert("user max cube count 5");
+          alert("user max cube count : " + getMaxCubeCountPerUser().toString());
           return;
         }
 
         const oldCubeIndex = firebase.ach.firebase.cube_index;
         let bResult = upload_to_realTimeDB(firebase.ach.google.email, index, oldCubeIndex, name, info, desc_url, firebase.ach.upload.json);
 
-        if( bResult == false )
+        if (bResult == true)
+        {
+          document.getElementById("desc_url").value = "";
+          document.getElementById("info").value = "";
+          document.getElementById("name").value = "";
+          ResetFileUI();
+
+          alert("업로드 성공!");
+        }
+        else
         {
           asert("upload_to_realTimeDB() arg error");
           console.log("email" + firebase.ach.google.email);
