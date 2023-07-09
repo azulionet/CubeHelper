@@ -49,10 +49,11 @@ def DownloadScryfallDefaultFile(fileName):
 # json filtering condition
 def json_item_condition(json_item, desired_keys, set_layout, remove_list, oversized_data, image_sub_keys):
 
-    if "oversized" in json_item:
-        if json_item["oversized"] == True:
-            oversized_data.append(json_item)
-            return None
+    # oversize 카드가... cube cobra에 디폴트로 박히는 경우가 있음
+    # if "oversized" in json_item:
+    #      if json_item["oversized"] == True:
+    #          oversized_data.append(json_item)
+    #          return None
     
     if "layout" in json_item:
 
