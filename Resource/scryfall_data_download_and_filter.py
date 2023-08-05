@@ -133,14 +133,13 @@ def StripFile(fileName, result_file_name):
                     "id",
                     "name",
                     "set", 
-                    "scryfall_uri",
                     "mana_cost",
                     "rarity",               # uncommon
                     "type_line",            # Creature — Sliver
                     "collector_number"
                     ]
 
-    image_sub_keys = ["image_uris_small", "image_uris_normal"]
+    image_sub_keys = ["small", "normal"]
 
     filtered_data = []
     oversized_data = []
