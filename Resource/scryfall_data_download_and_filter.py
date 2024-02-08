@@ -47,7 +47,7 @@ def DownloadScryfallDefaultFile(fileName):
     print("GetScryfallUploadedFile() end")
 
 # json filtering condition
-def json_item_condition(json_item, desired_keys, set_layout, remove_list, oversized_data, image_sub_keys):
+def json_item_condition(json_item, desired_keys, set_layout, remove_list, oversized_data):
 
     # oversize 카드가... cube cobra에 디폴트로 박히는 경우가 있음
     # if "oversized" in json_item:
@@ -63,15 +63,18 @@ def json_item_condition(json_item, desired_keys, set_layout, remove_list, oversi
         if( nowLayout in remove_list):
             return None
 
-        new_item = {key: json_item[key] for key in desired_keys if key in json_item}
-
+        new_item = {desired_key[1]: json_item[desired_key[0]] for desired_key in desired_keys if desired_key[0] in json_item}
+    
+        image_sub_keys = ["small", "normal"]
         # image_uris 항목이 있는 경우 해당 값들도 추출
         if 'image_uris' in json_item:
             for subkey in json_item['image_uris']:
 
                 for argSubKey in image_sub_keys:
-                    if subkey == argSubKey:
-                        new_item[f'image_uris_{subkey}'] = json_item['image_uris'][subkey]
+                    if subkey == "small":
+                        new_item['urls'] = json_item['image_uris'][subkey]
+                    elif subkey == "normal":
+                        new_item['urln'] = json_item['image_uris'][subkey]
 
         return new_item
 
@@ -130,22 +133,22 @@ def StripFile(fileName, result_file_name):
 
     # 필터링할 항목
     desired_keys = [
-                    "id",
-                    "name",
-                    "set", 
-                    "mana_cost",
-                    "rarity",               # uncommon
-                    "type_line",            # Creature — Sliver
-                    "collector_number"
+                    ("id", "id"),
+                    ("name", "n"),
+                    ("set", "s"), 
+                    ("mana_cost", "m"),
+                    ("rarity", "r"),               # uncommon
+                    ("type_line", "t"),            # Creature — Sliver
+                    ("collector_number", "cn")
                     ]
 
-    image_sub_keys = ["small", "normal"]
+
 
     filtered_data = []
     oversized_data = []
 
     for item in tqdm(data, desc="Filtering"):        
-        objResult = json_item_condition(item, desired_keys, set_layout, remove_list, oversized_data, image_sub_keys)
+        objResult = json_item_condition(item, desired_keys, set_layout, remove_list, oversized_data)
 
         if objResult != None:
             filtered_data.append(objResult)
@@ -193,7 +196,8 @@ def StripForUpload(filtered_file_name, upload_file_name):
         data = json.load(file)
 
     # 필터링할 항목
-    desired_keys = ["id", "name", "set", "collector_number"]
+    # id : id, n : name, s : set, cn : collectors_number
+    desired_keys = ["id", "n", "s", "cn"]
 
     filtered_data = []
 
