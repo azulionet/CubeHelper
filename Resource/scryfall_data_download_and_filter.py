@@ -72,9 +72,9 @@ def json_item_condition(json_item, desired_keys, set_layout, remove_list, oversi
 
                 for argSubKey in image_sub_keys:
                     if subkey == "small":
-                        new_item['urls'] = json_item['image_uris'][subkey]
+                        new_item['us'] = json_item['image_uris'][subkey]
                     elif subkey == "normal":
-                        new_item['urln'] = json_item['image_uris'][subkey]
+                        new_item['un'] = json_item['image_uris'][subkey]
 
         return new_item
 
@@ -131,7 +131,7 @@ def StripFile(fileName, result_file_name):
         # "planar", "scheme", "vanguard" 일단 넣기로
     ]
 
-    # 필터링할 항목
+    # 필터링할 항목, image url normal, small 2개 더 추가
     desired_keys = [
                     ("id", "id"),
                     ("name", "n"),
@@ -141,9 +141,7 @@ def StripFile(fileName, result_file_name):
                     ("type_line", "t"),            # Creature — Sliver
                     ("collector_number", "cn")
                     ]
-
-
-
+    
     filtered_data = []
     oversized_data = []
 
@@ -158,7 +156,17 @@ def StripFile(fileName, result_file_name):
 
     # 결과를 새 JSON 파일에 저장
     with open(result_file_name, 'w') as file:
-        json.dump(filtered_data, file)
+        file.write("[\n")
+        
+        for idx, obj in enumerate(filtered_data):
+            json_str = json.dumps(obj, separators=(',', ':'))
+            file.write(json_str)
+            
+            if idx < len(filtered_data) - 1:
+                file.write(",\n")
+        
+        file.write("\n]")
+
 
     print(" $$$ ------------------------------------------------------")
     print(" $$$ ------------------------------------------------------")
@@ -185,8 +193,6 @@ def StripFile(fileName, result_file_name):
     print("StripFile() finished")
 
 
-
-
 # downloaded file strip
 def StripForUpload(filtered_file_name, upload_file_name):
 
@@ -209,8 +215,20 @@ def StripForUpload(filtered_file_name, upload_file_name):
         os.remove(upload_file_name)
 
     # 결과를 새 JSON 파일에 저장
+    # with open(upload_file_name, 'w') as file:
+    #     json.dump(filtered_data, file)
+
     with open(upload_file_name, 'w') as file:
-        json.dump(filtered_data, file)
+        file.write("[\n")
+        
+        for idx, obj in enumerate(filtered_data):
+            json_str = json.dumps(obj, separators=(',', ':'))
+            file.write(json_str)
+            
+            if idx < len(filtered_data) - 1:
+                file.write(",\n")
+        
+        file.write("\n]")
 
     print(" $$$ ------------------------------------------------------")
     print(" $$$ ------------------------------------------------------")
@@ -234,6 +252,7 @@ else:
     print("Due to the '-ig' argument, the download will be skipped.")
 
 StripFile(download_file_name, filtered_file_name)
+
 StripForUpload(filtered_file_name, upload_file_name)
 
 print("python program finished")

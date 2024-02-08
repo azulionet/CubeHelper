@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Welcome to Firebase Hosting</title>
 
+    <!-- 큐브 업로드를 위한 웹페이지, 파이어 베이스를 통해 서비스 됨-->
+
     <!-- update the version number as needed -->
     <script defer src="/__/firebase/9.22.1/firebase-app-compat.js"></script>
     <!-- include only the Firebase features as you need -->
@@ -167,24 +169,7 @@
       //
       // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
 
-      try {
-        let app = firebase.app();
-        let features = [
-          'auth',
-          'database', 
-          'firestore',
-          'functions',
-          'messaging', 
-          'storage', 
-          'analytics', 
-          'remoteConfig',
-          'performance',
-        ].filter(feature => typeof app[feature] === 'function');
-        loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-      } catch (e) {
-        console.error(e);
-        loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-      }
+      loadEl.textContent = "Azu's Cube Helper - v.0.1.93.0"      
     });
 
     function SaveServerJsonToIndexedDB(data, updatedTimeOnServer)
@@ -204,7 +189,6 @@
           var transaction = db.transaction("FirebaseData", "readwrite");
           var objectStore = transaction.objectStore("FirebaseData");
 
-          // 기존에 있는 항목을 덮어쓰기 위해 put 메소드를 사용
           objectStore.put(data, "Cards");
           objectStore.put(updatedTimeOnServer, "UpdateTime");
         };
@@ -257,12 +241,10 @@
                   let request = objectStore.get("Cards");
 
                   request.onsuccess = function(event) {
-                    // 모든 데이터를 성공적으로 받아왔을 때, 그 데이터를 resolve합니다.
                     resolve(request.result);
                   };
 
                   request.onerror = function(event) {
-                    // 데이터를 받아오는 데 실패했을 때, 에러를 reject합니다.
                     reject(Error("Error getting data from IndexedDB"));
                   };
                 }
@@ -282,20 +264,17 @@
         };
 
         openRequest.onerror = function(event) {
-          // 데이터베이스를 열지 못했을 때, 에러를 reject합니다.
           reject(Error("Error opening database"));
         };        
       });
     }
 
-    // when file list ok. uploader file download & save to DB
     function FileDownload(fileRef)
     {
       console.log("FileDownload called !!!");
 
       let updatedTimeOnServer = null; 
 
-      // recv file meta data
       fileRef.getMetadata().then((metadata) => {
         updatedTimeOnServer = metadata.updated;
 
@@ -343,7 +322,6 @@
                       reader.readAsText(blob);                
                     }
 
-                  // JSON 데이터를 가져오는 요청을 보냅니다.
                   xhr.open('GET', url);
                   xhr.open('GET', url);
                   xhr.send();
@@ -658,7 +636,7 @@
           (dataItem) => 
           {            
             // name, number정도면 거의 찾을 확률이 높아서 이렇게 작업
-            let bMatch = isSameCard_fullData(dataItem.name, dataItem.set, dataItem.collector_number,
+            let bMatch = isSameCard_fullData(dataItem.n, dataItem.s, dataItem.cn,
             userItem.name, userItem.set, userItem.collector_number);
 
             if( bMatch == true)
@@ -688,7 +666,7 @@
             var match2 = data.find(
                (dataItem) => 
                {            
-                 let bMatch = isSameCard(dataItem.name, dataItem.set, userItem.name, userItem.set);
+                 let bMatch = isSameCard(dataItem.n, dataItem.s, userItem.name, userItem.set);
  
                  if( bMatch == true)
                  {
