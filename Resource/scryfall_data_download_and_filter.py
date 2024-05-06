@@ -70,11 +70,11 @@ def json_item_condition(json_item, desired_keys, set_layout, remove_list, oversi
         if 'image_uris' in json_item:
             for subkey in json_item['image_uris']:
 
-                for argSubKey in image_sub_keys:
-                    if subkey == "small":
-                        new_item['us'] = json_item['image_uris'][subkey]
-                    elif subkey == "normal":
-                        new_item['un'] = json_item['image_uris'][subkey]
+                #for argSubKey in image_sub_keys:
+                if subkey == "small":
+                    new_item['us'] = json_item['image_uris'][subkey]
+                elif subkey == "normal":
+                    new_item['un'] = json_item['image_uris'][subkey]
 
         return new_item
 
