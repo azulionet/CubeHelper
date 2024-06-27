@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
-import 'dart:convert';
 
 import '../Global/global.dart';
 import '../Function/firebaseRealtimeDB.dart';
+import '../Function/firebaseStorage.dart';
 
 import '../Global/define.dart';
 import '../Global/extensions.dart';
 import '../Function/googleLogin.dart';
 
+// todo : 언제고 큐브 리스트가 많이 많아진다면 부분 부분 업데이트하는 코드가 필요함
+
 class Page5 extends StatefulWidget {
-  Page5({super.key, required this.title, required Function(String) callback})
+  const Page5(
+      {super.key, required this.title, required Function(String) callback})
       : fpCallback = callback;
 
   final String title;
@@ -28,13 +31,13 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
   late Animation<double> _animation;
 
   String? _selectedCategory = "All";
-  List<String?> _categories = ["All", "My Cube", "MTG Online"];
+  final List<String?> _categories = ["All", "My Cube", "MTG Online"];
 
   @override
   void initState() {
     super.initState();
 
-    __uiComponentInit() {
+    uiComponentInit() {
       _liShow = List<bool>.generate(Global.cubeListCount, (index) => false);
 
       _animationController = AnimationController(
@@ -48,7 +51,7 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
       );
     }
 
-    __uiComponentInit();
+    uiComponentInit();
   }
 
   @override
@@ -66,38 +69,49 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
             ),
             child: _makeRefreshableScrollList(),
           ),
-          if (GoolgleLogin.bLogin == false)
-            Positioned(
-              bottom: 16,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: SignInButton(
-                  Buttons.Google,
-                  text: "Sign in with Google",
-                  onPressed: () {
-                    if (GoolgleLogin.bLogin == true) {
-                      "이미 로그인 되었습니다.".toast();
-                      return;
-                    }
-
-                    GoolgleLogin.signInWithGoogle(
-                        onSignInSucceeded: (bSuccess, userEmail) {
-                      setState(() {
-                        if (bSuccess == true) {
-                          "구글 로그인 완료".toast();
-                        } else {
-                          "구글 로그인에 실패 하였습니다.".toast();
-                        }
-
-                        Global.googleLogin(bSuccess, userEmail);
-                      });
-                    });
-                  },
-                ),
-              ),
-            ),
+          if (GoolgleLogin.bLogin == false) _getGoogleLoginButton(),
         ],
+      ),
+    );
+  }
+
+  Widget _getGoogleLoginButton() {
+    return Positioned(
+      bottom: 16,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: SignInButton(
+          Buttons.Google,
+          text: "Sign in with Google",
+          onPressed: () {
+            if (GoolgleLogin.bLogin == true) {
+              "이미 로그인 되었습니다.".toast();
+              return;
+            }
+
+            GoolgleLogin.signInWithGoogle(
+                onSignInSucceeded: (bSuccess, userEmail) {
+              setState(() {
+                if (bSuccess == true) {
+                  "구글 로그인 완료".toast();
+
+                  ACHFirebaseStorage.requestCardData((_bSuccess) {
+                    if (_bSuccess) {
+                      "카드 데이터 다운로드 완료".toast();
+                    } else {
+                      "카드 데이터 다운로드 에러".toast();
+                    }
+                  });
+                } else {
+                  "구글 로그인에 실패 하였습니다.".toast();
+                }
+
+                Global.googleLogin(bSuccess, userEmail);
+              });
+            });
+          },
+        ),
       ),
     );
   }
@@ -118,7 +132,7 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
       _isLoading = true;
     });
 
-    FirebaseRealtimeDB.requestCubeList((bResult) {
+    ACHFirebaseRealtimeDB.requestCubeList((bResult) {
       setState(() {
         _isLoading = false;
       });
@@ -128,7 +142,7 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
       if (bResult == true) {
         _liShow = List<bool>.generate(Global.cubeListCount, (index) => false);
 
-        G.Log("recved cube list count : " + Global.cubeListCount.toString());
+        G.Log("recved cube list count : ${Global.cubeListCount}");
 
         // 새 데이터가 리프레시 되었을 떄,
         // _liShow 카운트 같고, true없으면 안해도됨
@@ -156,7 +170,7 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
     List<Widget> container = [];
     List<Widget> inStack = [];
 
-    __setInStackUIs(List<Widget> refStack) {
+    setInStackUIs(List<Widget> refStack) {
       refStack.add(const Padding(
           padding: EdgeInsets.only(bottom: 20.0),
           child: Center(
@@ -180,7 +194,7 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
                   color: Colors.white,
                 ),
                 dropdownColor: Colors.blue,
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white),
                 onChanged: (dynamic value) {
                   _selectedCategory = value;
                 },
@@ -197,7 +211,7 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
       return refStack;
     }
 
-    __setInStackUIs(inStack);
+    setInStackUIs(inStack);
 
     container.add(const SizedBox(height: 20.0));
 
@@ -247,9 +261,9 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
 
   _getCubeListIcon(Cube_DB selectedCube) {
     if (Global.bIsLogin == true) {
-      if (selectedCube.owner == Global.googleEamil) {
+      if (Global.isMyCube(selectedCube) == true) {
         return Icons.account_box;
-      } else if (Global.IsLikedListCube(selectedCube) == true) {
+      } else if (Global.isLikedListCube(selectedCube) == true) {
         return Icons.favorite;
       }
     }
@@ -291,7 +305,7 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
           },
           child: Card(
             color: _liShow[index]
-                ? Color.fromARGB(255, 240, 203, 107)
+                ? const Color.fromARGB(255, 240, 203, 107)
                 : Colors.white.withOpacity(0.7),
             child: ListTile(
               leading: Icon(
@@ -329,19 +343,57 @@ class Page5State extends State<Page5> with SingleTickerProviderStateMixin {
               child: ScaleTransition(
                 scale: _animation,
                 child: IconButton(
-                  icon: Icon(
-                    Icons.open_in_new,
-                    color: Colors.indigoAccent,
-                    size: iconSize,
-                  ),
-                  onPressed: () {
-                    if (Global.selectCube(index) == true) {
-                      setParentTitle(Global.cubeList[index].name);
-                    }
-                  },
-                ),
+                    icon: Icon(
+                      Icons.open_in_new,
+                      color: Colors.indigoAccent,
+                      size: iconSize,
+                    ),
+                    onPressed: _isLoading
+                        ? null
+                        : () => _onSelectCubeButtonClicked(index)),
               ),
             ))
         : null;
+  }
+
+  Future<void> _onSelectCubeButtonClicked(int index) async {
+    G.Log("ACH - _onSelectCubeButtonClicked : $index");
+
+    if (_selectCube(index) == true) {
+      if (Global.hasCardList(Global.selectedCube.name) == false) {
+        setState(() {
+          _isLoading = true; // 로딩 상태로 설정하여 UI 표시
+        });
+
+        List<Card_DB> liCards = [];
+
+        await ACHFirebaseRealtimeDB.requestCardList(
+            Global.selectedCube.key, liCards);
+
+        if (liCards.isNotEmpty == true) {
+          Global.addCubeCardList(Global.selectedCube.name, liCards);
+          setParentTitle(Global.cubeList[index].name);
+        } else {
+          "ACH - download card list error. check internet connection"
+              .toastBig();
+        }
+
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } else {
+      var list = Global.getCubeCardList(Global.selectedCube.name);
+
+      if (list != null) {
+        setParentTitle(Global.cubeList[index].name);
+      } else {
+        "ACH - Error Occured!!".toastBig();
+      }
+    }
+  }
+
+  _selectCube(int index) {
+    return Global.selectCube(index);
   }
 }

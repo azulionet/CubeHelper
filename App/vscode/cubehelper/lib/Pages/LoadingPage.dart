@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import '../MainPage.dart';
-import 'package:http/http.dart' as http;
+
 import '../Function/firebaseRealtimeDB.dart';
+// import '../Function/firebaseStorage.dart';
 
 class LoadingPage extends StatefulWidget {
+  const LoadingPage({super.key});
+
   @override
   _LoadingPageState createState() => _LoadingPageState();
 }
@@ -38,12 +40,13 @@ class _LoadingPageState extends State<LoadingPage> {
 
   void _simulateLoading() async {
     nSuccessCount = 0;
-    var response2 = FirebaseRealtimeDB.requestCubeList(null);
-    var response3 = waitProgressUI();
+    // var response1 = ACHFirebaseStorage.requestCardData(null);
+    var response2 = ACHFirebaseRealtimeDB.requestCubeList(null);
+    // var response3 = waitProgressUI();
 
     response2.then((value) {
       setState(() {
-        loadingValue += 0.6;
+        loadingValue += 0.77;
 
         if (loadingValue >= 1) {
           loadingValue = 1;
@@ -54,7 +57,7 @@ class _LoadingPageState extends State<LoadingPage> {
       });
     });
 
-    await Future.wait([response2, response3]);
+    await Future.wait([response2]);
 
     if (loadingValue >= 1) {
       loadingValue = 1;
@@ -101,7 +104,7 @@ class _LoadingPageState extends State<LoadingPage> {
                     visible: bVisibleButton,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        primary: Colors.white,
+                        backgroundColor: Colors.white,
                       ),
                       onPressed: () {
                         Navigator.pushReplacementNamed(context, '/main');

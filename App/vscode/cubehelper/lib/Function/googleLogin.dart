@@ -1,9 +1,7 @@
-import 'package:cubehelper/Global/extensions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../Global/define.dart';
-import '../Global/global.dart';
 
 class GoolgleLogin {
   static final GoogleSignIn _googleSignIn = GoogleSignIn();

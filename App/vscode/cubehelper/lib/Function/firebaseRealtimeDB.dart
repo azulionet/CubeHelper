@@ -1,10 +1,6 @@
-import 'dart:convert';
-import 'dart:math';
 import 'package:cubehelper/Global/define.dart';
-import 'package:http/http.dart' as http;
 import '../Global/global.dart';
 
-import 'package:path_provider/path_provider.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 typedef TypeMaker<T> = T Function();
@@ -12,12 +8,52 @@ typedef HTTPObjFactoryMake<T> = TypeMaker<T> Function(Map<String, dynamic> arg);
 typedef HTTPCallback<T> = bool Function(T dataObject, bool bResult);
 typedef TestCallback = void Function(bool bResult);
 
-class FirebaseRealtimeDB {
+class ACHFirebaseRealtimeDB {
   // callback 을 잘 ㅇㅇ
 
   static DateTime? lastCubeRequestedTime;
 
   static Future<bool> requestCubeList(TestCallback? refCallback) async {
+    Future<bool> getCubeList() async {
+      bool bResult = false;
+
+      try {
+        var dbRef = FirebaseDatabase.instance.ref().child("cubes");
+
+        var event = await dbRef.once();
+
+        if (event.snapshot.value != null) {
+          G.Log(event.snapshot.value.toString());
+
+          Map<dynamic, dynamic> data =
+              event.snapshot.value as Map<dynamic, dynamic>;
+
+          Global.cubeList.clear();
+
+          data.forEach((key, value) {
+            // Cube 객체 생성
+            Cube_DB cube = Cube_DB.fromMap(value, key);
+
+            Global.cubeList.add(cube);
+
+            G.Log("parsed cube name : ${cube.name}");
+            G.Log("parsed cube info : ${cube.info}");
+          });
+
+          Global.sortRecvedCubeList();
+
+          G.Log("receved cube count : ${Global.cubeListCount}");
+
+          bResult = true;
+        }
+      } catch (e) {
+        G.Log(e.toString());
+        return false;
+      }
+
+      return bResult;
+    }
+
     G.Log("requestCubeList");
 
     DateTime now = DateTime.now();
@@ -36,7 +72,7 @@ class FirebaseRealtimeDB {
 
     lastCubeRequestedTime = now;
 
-    bool bResult = await _getCubeList();
+    bool bResult = await getCubeList();
 
     if (bResult == false) {
       lastCubeRequestedTime = null;
@@ -45,47 +81,49 @@ class FirebaseRealtimeDB {
     refCallback?.call(bResult);
     return bResult;
   }
-}
 
-Future<bool> _getCubeList() async {
-  bool bResult = false;
+  static Future<bool> requestCardList(
+      String cubeKey, List<Card_DB> outCards) async {
+    try {
+      G.Log("ee");
 
-  try {
-    var dbRef = FirebaseDatabase.instance.ref().child("cubes");
+      var dbRef = FirebaseDatabase.instance
+          .ref()
+          .child("cardlists")
+          .child(cubeKey)
+          .child("list");
 
-    var event = await dbRef.once();
+      var event = await dbRef.once();
 
-    if (event.snapshot.value != null) {
-      G.Log(event.snapshot.value.toString());
+      if (event.snapshot.value != null) {
+        List<dynamic> snapshotData = event.snapshot.value as List<dynamic>;
 
-      Map<dynamic, dynamic> data =
-          event.snapshot.value as Map<dynamic, dynamic>;
+        outCards.clear();
 
-      if (data == null) {
-        G.Log(" ? data in null ");
-        return false;
-      }
+        for (var dataMap in snapshotData) {
+          if (dataMap is Map<dynamic, dynamic>) {
+            String id = dataMap['id'] as String;
 
-      Global.cubeList.clear();
+            if (Global.mapAllCards.containsKey(id) == true) {
+              var storage = Global.mapAllCards[id];
 
-      data.forEach((key, value) {
-        // Cube 객체 생성
-        Cube_DB cube = Cube_DB.fromMap(value, key);
+              Card_DB cardDB =
+                  Card_DB.fromMap(dataMap, storage as Card_Storage);
+              outCards.add(cardDB);
 
-        Global.cubeList.add(cube);
-
-        G.Log("parsed cube name : " + cube.name);
-        G.Log("parsed cube info : " + cube.info);
-      });
-
-      G.Log("receved cube count : " + Global.cubeListCount.toString());
-
-      bResult = true;
+              G.Log("ach - card added");
+            } else {
+              G.Log("ach - not found card : id [$id]");
+            }
+          }
+        }
+            }
+    } catch (e) {
+      G.Log("ACH - req error : ee");
+      G.Log(e.toString());
+      return false;
     }
-  } catch (e) {
-    G.Log(e.toString());
-    return false;
-  }
 
-  return bResult;
+    return true;
+  }
 }

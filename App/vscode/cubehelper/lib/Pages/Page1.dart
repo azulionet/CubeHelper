@@ -1,9 +1,9 @@
-import 'package:cubehelper/Global/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../Global/global.dart';
 import '../Global/define.dart';
+
 
 class Page1 extends StatefulWidget {
   const Page1({super.key, required this.title});
@@ -25,22 +25,22 @@ class Page1State extends State<Page1> {
 
     G.Log("page 1 initState()");
 
-    selectedCube = Global.selectedCube;
-    changeList = Global.selectedCubeChangeList;
+    selectedCube = Global.getSelectedCube();
+    changeList = Global.getSelectedCubeChangeList();
   }
 
   @override
   Widget build(BuildContext context) {
-    void __prepareTopUI() {
+    void prepareTopUI() {
       showCubeInfoURL = Container();
 
-      String url = Global.getSelectedCubeInfoURL;
+      String url = Global.getSelectedCubeDescriptionURL();
 
       if (url.isNotEmpty) {
         showCubeInfoURL =
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(height: 16.0),
-          Text(
+          const SizedBox(height: 16.0),
+          const Text(
             ' - detail link page',
             style: TextStyle(
                 fontSize: 12.0,
@@ -59,7 +59,7 @@ class Page1State extends State<Page1> {
     }
 
     // 히스토리, 하단부
-    void __prepareHistoryWidget() {
+    void prepareHistoryWidget() {
       dataWidgets = [];
 
       int maxData = changeList.count;
@@ -71,12 +71,12 @@ class Page1State extends State<Page1> {
       if (maxData == 0) {
         dataWidgets.add(
           Container(
-            margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.green),
               borderRadius: BorderRadius.circular(8.0),
             ),
-            child: Padding(
+            child: const Padding(
               padding: EdgeInsets.all(8.0),
               child: Row(children: [
                 Icon(Icons.info, color: Colors.blue),
@@ -99,27 +99,27 @@ class Page1State extends State<Page1> {
                 children: [
                   Expanded(
                     child: Container(
-                      margin:
-                          EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8.0, horizontal: 4.0),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(color: Colors.greenAccent, width: 3),
                         borderRadius: BorderRadius.circular(8.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.all(8.0),
                         child: Row(children: [
-                          Icon(
+                          const Icon(
                             Icons.login,
                             color: Colors.blue,
                             weight: 600,
                           ),
-                          SizedBox(width: 8.0),
+                          const SizedBox(width: 8.0),
                           Text(
                             changeList.data[i].name,
                             selectionColor: Colors.amber,
-                            style:
-                                TextStyle(fontSize: 16.0, color: Colors.black),
+                            style: const TextStyle(
+                                fontSize: 16.0, color: Colors.black),
                           )
                         ]),
                       ),
@@ -127,8 +127,8 @@ class Page1State extends State<Page1> {
                   ),
                   Expanded(
                     child: Container(
-                      margin:
-                          EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8.0, horizontal: 4.0),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(
@@ -139,7 +139,7 @@ class Page1State extends State<Page1> {
                         borderRadius: BorderRadius.circular(8.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.all(8.0),
                         child: Row(children: [
                           Icon(
                             Icons.logout,
@@ -147,14 +147,14 @@ class Page1State extends State<Page1> {
                                 (i + 1 < maxData) ? Colors.blue : Colors.white,
                             weight: 600,
                           ),
-                          SizedBox(width: 8.0),
+                          const SizedBox(width: 8.0),
                           Text(
                             (i + 1 < maxData)
                                 ? changeList.data[i + 1].name
                                 : "",
                             selectionColor: Colors.amber,
-                            style:
-                                TextStyle(fontSize: 16.0, color: Colors.black),
+                            style: const TextStyle(
+                                fontSize: 16.0, color: Colors.black),
                           )
                         ]),
                       ),
@@ -180,8 +180,8 @@ class Page1State extends State<Page1> {
       }
     }
 
-    __prepareTopUI();
-    __prepareHistoryWidget();
+    prepareTopUI();
+    prepareHistoryWidget();
 
     return Container(
       color: Colors.blue[100],
@@ -207,34 +207,54 @@ class Page1State extends State<Page1> {
 
   /// 상단부
 
-  Widget __topUI() {
-    return Container(
-        padding: EdgeInsets.all(16.0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(
-            'Cube Info',
-            style: TextStyle(
-              fontSize: 12.0,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 16.0),
-          Text(
-            selectedCube.info,
-            style: TextStyle(
-              fontSize: 16.0,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          showCubeInfoURL,
-        ]));
-  }
+  // Widget __topUI() {
+  //   return Container(
+  //       padding: EdgeInsets.all(16.0),
+  //       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  //         Text(
+  //           'Cube Info',
+  //           style: TextStyle(
+  //             fontSize: 12.0,
+  //             fontWeight: FontWeight.bold,
+  //           ),
+  //         ),
+  //         SizedBox(height: 16.0),
+  //         Text(
+  //           selectedCube.info,
+  //           style: TextStyle(
+  //             fontSize: 16.0,
+  //             fontWeight: FontWeight.bold,
+  //           ),
+  //         ),
+  //         showCubeInfoURL,
+  //       ]));
+  // }
 
   Widget _topUI() {
     return Container(
-      padding: EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(
+        const Text(
+          'Cube Name',
+          style: TextStyle(
+            fontSize: 12.0,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 16.0),
+        Padding(
+            padding: const EdgeInsets.only(left: 10.0),
+            child: Text(
+              selectedCube.name,
+              style: const TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            )),
+        const SizedBox(height: 16.0),
+        const Text(
           'Cube Info',
           style: TextStyle(
             fontSize: 12.0,
@@ -242,13 +262,16 @@ class Page1State extends State<Page1> {
             color: Colors.black,
           ),
         ),
-        SizedBox(height: 16.0),
-        Text(
-          selectedCube.info,
-          style: TextStyle(
-            fontSize: 16.0,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+        const SizedBox(height: 16.0),
+        Padding(
+          padding: const EdgeInsets.only(left: 10.0),
+          child: Text(
+            selectedCube.info,
+            style: const TextStyle(
+              fontSize: 16.0,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
           ),
         ),
         showCubeInfoURL,
@@ -258,18 +281,18 @@ class Page1State extends State<Page1> {
 
   Widget _bottomUI() {
     return Container(
-      padding: EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Data Display',
             style: TextStyle(
                 fontSize: 12.0,
                 fontWeight: FontWeight.bold,
                 color: Colors.white),
           ),
-          SizedBox(height: 16.0),
+          const SizedBox(height: 16.0),
           Column(
             children: dataWidgets,
           ),
@@ -282,7 +305,7 @@ class Page1State extends State<Page1> {
   Widget _mainUI() {
     return SingleChildScrollView(
         child: Container(
-            padding: EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [_topUI(), _bottomUI()],

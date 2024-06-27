@@ -6,5 +6,5 @@ class Cube {
   // version 필요 최소 표기에는 필요없음
 
   Cube_DB? _cube;
-  List<Card> _liCards = [];
+  final List<Card> _liCards = [];
 }

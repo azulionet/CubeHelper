@@ -43,12 +43,12 @@ extension String_ExtensionMethos on String {
   }
 
   bool isNullOrEmpty() {
-    return this == null || isEmpty;
+    return isEmpty;
   }
 
-  void sendEmail(String email_body) async {
+  void sendEmail(String emailBody) async {
     final Email email = Email(
-      body: email_body,
+      body: emailBody,
       subject: this,
       recipients: ['duqrlehs@gmail.com'],
       isHTML: false,
@@ -57,8 +57,7 @@ extension String_ExtensionMethos on String {
     try {
       await FlutterEmailSender.send(email);
     } catch (error) {
-      ("email 보낼 때 에러나쓰요 ㅠㅠ. duqrlehs@gmail.com 으로 직접 보내주세요 ㅠㅠ\n 에러 : " +
-              error.toString())
+      ("email 보낼 때 에러 났습니다. ㅠㅠ. duqrlehs@gmail.com 으로 직접 보내주세요 ㅠㅠ\n 에러 : $error")
           .toast();
     }
   }
@@ -79,7 +78,7 @@ extension String_ExtensionMethos on String {
 
     String safeId = this;
     for (var char in forbiddenChars) {
-      safeId = safeId.replaceAll(RegExp('\\' + char), ',');
+      safeId = safeId.replaceAll(RegExp('\\$char'), ',');
     }
 
     return safeId;
@@ -109,13 +108,25 @@ extension String_ExtensionMethos on String {
 }
 
 extension EOption_ExtensionMethods on EOption {
-  static bool? isTrue(EOption a_eOpt) {
-    String? s = OptionManager.get(a_eOpt);
+  bool? isTrue() {
+    String? s = OptionManager.get(this);
 
     if (s == null) {
       return null;
     }
 
     return s == "true";
+  }
+
+  String? getValue() {
+    return OptionManager.get(this);
+  }
+
+  void setOptionValue(String aSvalue) {
+    OptionManager.setOptionValue(this, aSvalue);
+  }
+
+  void removeOption() {
+    OptionManager.removeOption(this);
   }
 }

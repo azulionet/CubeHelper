@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 
 class Page3 extends StatefulWidget {
   const Page3({super.key, required this.title});
@@ -33,13 +32,13 @@ class Page3State extends State<Page3> {
           size: 100.0,
           color: Theme.of(context).primaryColor,
         ),
-        Text(
+        const Text(
           '준비중입니다.',
           style: TextStyle(
             fontSize: 24.0,
           ),
         ),
-        Text(
+        const Text(
           'play test',
           style: TextStyle(
             fontSize: 20.0,

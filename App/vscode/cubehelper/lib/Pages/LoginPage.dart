@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../MainPage.dart';
-import '../Function/firebaseRealtimeDB.dart';
 
 // import 'package:flutter/services.dart';
 // void exitApp() {
@@ -8,11 +6,13 @@ import '../Function/firebaseRealtimeDB.dart';
 // }
 
 class LoginPage extends StatelessWidget {
+  const LoginPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login Page'),
+        title: const Text('Login Page'),
       ),
       body: Center(
         child: Column(
@@ -34,7 +34,7 @@ class LoginPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              child: Text('로그인'),
+              child: const Text('로그인'),
               onPressed: () {},
             ),
           ],

@@ -9,8 +9,7 @@ class G {
 }
 
 enum EOption {
-  // bool
-
+  // 설정 (UI) 을 통한 값들
   downloadImagesWhenWifiConnected(
       1, "downloadImagesWhenWifiConnected", "true", bool),
 
@@ -18,10 +17,10 @@ enum EOption {
 
   option3(3, "option3", "true", bool),
 
-  // 이하 내용은 프렙스에 기입을 해야하는, 전역 데이터
+  // 프로그램 전역 데이터
   __seperator__(-1, "", "", Type),
 
-  scryfall_card_version(1000, "card_pull_version", "", String),
+  cardDataUpdateTime(1000, "cardUpdateDate", "", String), // DateTime
   __end__(-1, "", "", Type);
 
   const EOption(this.value, this.sPrefsKey, this.sDefault, this.treat);

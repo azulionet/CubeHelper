@@ -44,33 +44,44 @@ class OptionManager {
     return true;
   }
 
-  static void setOptionValue(EOption a_eOpt, String a_sValue) {
+  static void removeOption(EOption aEopt) async {
+    var key = aEopt.sPrefsKey;
+
+    final prefs = await SharedPreferences.getInstance();
+    prefs.remove(key);
+
+    if (_options.containsKey(key) == true) {
+      _options.remove(key);
+    }
+  }
+
+  static void setOptionValue(EOption aEopt, String aSvalue) {
     if (_bInit == false) {
       return;
     }
 
-    if (_options.containsKey(a_eOpt) == true) {
-      var sVal = _options[a_eOpt];
+    if (_options.containsKey(aEopt) == true) {
+      var sVal = _options[aEopt];
 
-      if (sVal == a_sValue) {
+      if (sVal == aSvalue) {
         return;
       }
     }
 
-    _options[a_eOpt] = a_sValue;
-    prefs.setString(a_eOpt.sPrefsKey, a_sValue);
+    _options[aEopt] = aSvalue;
+    prefs.setString(aEopt.sPrefsKey, aSvalue);
   }
 
-  static String? get(EOption a_eOpt) {
-    if (_options.containsKey(a_eOpt) == true) {
+  static String? get(EOption aEopt) {
+    if (_options.containsKey(aEopt) == true) {
       return null;
     }
 
-    return _options[a_eOpt];
+    return _options[aEopt];
   }
 
-  static bool isTrue(EOption a_eOpt) {
-    String? ss = get(a_eOpt);
+  static bool isTrue(EOption aEopt) {
+    String? ss = get(aEopt);
 
     if (ss == null) {
       return false;

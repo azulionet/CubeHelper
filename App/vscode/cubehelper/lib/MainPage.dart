@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'Global/global.dart';
 import 'Global/define.dart';
 import 'Function/optionManager.dart';
-import 'Function/firebaseRealtimeDB.dart';
 
 import 'Pages/Page1.dart';
 import 'Pages/Page2.dart';
@@ -36,7 +35,7 @@ enum Page {
 }
 
 class _MainPageState extends State<MainPage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final List<StatefulWidget> _pages = [];
   int _index = 4;
 
@@ -45,13 +44,36 @@ class _MainPageState extends State<MainPage> {
   String _titleName = "Azu's cube helper";
 
   bool _bottomNavVisible = false;
+  bool _showSubMenu = false;
+
+  void _toggleSubMenu(bool show) {
+    setState(() {
+      _showSubMenu = show;
+    });
+  }
 
   static const Color _bottomButtonColor = Colors.black;
-  static const Color _cubeInfoBackgroundColor = Colors.amber;
-  static const Color _cardListBackgroundColor = Colors.yellow;
-  static const Color _playTestBackgroundColor = Colors.red;
-  static const Color _analyticsBackgroundColor = Colors.orange;
-  static const Color _cubeListBackgroundColor = Colors.deepOrange;
+  // static const Color _cubeInfoBackgroundColor = Colors.amber;
+  // static const Color _cardListBackgroundColor = Colors.yellow;
+  // static const Color _playTestBackgroundColor = Colors.red;
+  // static const Color _analyticsBackgroundColor = Colors.orange;
+  // static const Color _cubeListBackgroundColor = Colors.deepOrange;
+
+  static const Color _cubeInfoBackgroundColor = Color(0xFF64B5F6);
+  static const Color _cardListBackgroundColor = Color(0xFF4CAF50);
+  static const Color _playTestBackgroundColor =
+      Color.fromARGB(255, 245, 77, 66);
+  static const Color _analyticsBackgroundColor =
+      Color.fromARGB(255, 252, 208, 65);
+  static const Color _cubeListBackgroundColor = Color(0xFFBA68C8);
+
+  static const List<Color> _bottomColors = [
+    _cubeInfoBackgroundColor,
+    _cardListBackgroundColor,
+    _playTestBackgroundColor,
+    _analyticsBackgroundColor,
+    _cubeListBackgroundColor,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -129,41 +151,101 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
+  static const int NavigationAniMillisecond = 300;
+
   Widget getBottomNavigationBar() {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 750),
-      opacity: _bottomNavVisible ? 1.0 : 0.0,
-      child: BottomNavigationBar(
-        onTap: (index) {
-          setState(() {
-            _index = index;
-          });
-        },
-        currentIndex: _index,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-              label: 'info',
-              backgroundColor: _cubeInfoBackgroundColor,
-              icon: Icon(Icons.description, color: _bottomButtonColor)),
-          BottomNavigationBarItem(
-              label: "list",
-              backgroundColor: _cardListBackgroundColor,
-              icon: Icon(Icons.dashboard, color: _bottomButtonColor)),
-          BottomNavigationBarItem(
-              label: "play",
-              backgroundColor: _playTestBackgroundColor,
-              icon: Icon(Icons.smart_display, color: _bottomButtonColor)),
-          BottomNavigationBarItem(
-              label: "analytics",
-              backgroundColor: _analyticsBackgroundColor,
-              icon: Icon(Icons.analytics, color: _bottomButtonColor)),
-          BottomNavigationBarItem(
-              label: "cubes",
-              backgroundColor: _cubeListBackgroundColor,
-              icon: Icon(Icons.view_list, color: _bottomButtonColor)),
-        ],
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      // 서브 메뉴 바
+      AnimatedContainer(
+        duration: const Duration(milliseconds: NavigationAniMillisecond),
+        color: _bottomColors[_index], // 배경색상은 원하는 대로 설정합니다.
+        height: _showSubMenu ? 50 : 0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: _buildSubMenus(_index),
+        ),
       ),
-    );
+      AnimatedOpacity(
+        duration: const Duration(milliseconds: NavigationAniMillisecond),
+        opacity: _bottomNavVisible ? 1.0 : 0.0,
+        child: BottomNavigationBar(
+          onTap: (index) {
+            setState(() {
+              _index = index;
+
+              _toggleSubMenu(_hasSubMenu(_index));
+            });
+          },
+          currentIndex: _index,
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+                label: 'info',
+                backgroundColor: _cubeInfoBackgroundColor,
+                icon: Icon(Icons.description, color: _bottomButtonColor)),
+            BottomNavigationBarItem(
+                label: "list",
+                backgroundColor: _cardListBackgroundColor,
+                icon: Icon(Icons.dashboard, color: _bottomButtonColor)),
+            BottomNavigationBarItem(
+                label: "play",
+                backgroundColor: _playTestBackgroundColor,
+                icon: Icon(Icons.smart_display, color: _bottomButtonColor)),
+            BottomNavigationBarItem(
+                label: "analytics",
+                backgroundColor: _analyticsBackgroundColor,
+                icon: Icon(Icons.analytics, color: _bottomButtonColor)),
+            BottomNavigationBarItem(
+                label: "cubes",
+                backgroundColor: _cubeListBackgroundColor,
+                icon: Icon(Icons.view_list, color: _bottomButtonColor)),
+          ],
+        ),
+      )
+    ]);
+  }
+
+  bool _hasSubMenu(int index) {
+    switch (index) {
+      case 0:
+        return false;
+      case 1:
+        return true;
+      case 2:
+        return true;
+      case 3:
+        return true;
+      case 4:
+        return false;
+    }
+    return false;
+  }
+
+  List<Widget> _buildSubMenus(int index) {
+    switch (index) {
+      case 1:
+        return [
+          IconButton(
+            icon: const Icon(Icons.access_alarm),
+            onPressed: () {},
+          ),
+        ];
+      case 2:
+        return [
+          IconButton(
+            icon: const Icon(Icons.access_alarm),
+            onPressed: () {},
+          ),
+        ];
+      case 3:
+        return [
+          IconButton(
+            icon: const Icon(Icons.access_alarm),
+            onPressed: () {},
+          ),
+        ];
+      default:
+        return [];
+    }
   }
 
   // only for email
@@ -223,6 +305,14 @@ class _MainPageState extends State<MainPage> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.delete),
+            title: const Text('Cache Reset'),
+            onTap: () {
+              Global.cacheReset();
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.mail),
             title: const Text('앱 제작자에게 메일 보내기'),
             onTap: () {
@@ -263,7 +353,7 @@ class _MainPageState extends State<MainPage> {
                         },
                       ),
                       TextButton(
-                        child: Text('Send'),
+                        child: const Text('Send'),
                         onPressed: () {
                           String subject = subjectController.text;
                           String mailBody = bodyController.text;
@@ -385,14 +475,14 @@ class _MainPageState extends State<MainPage> {
     showModalBottomSheet(
       context: context,
       builder: (context) {
-        return Container(
+        return SizedBox(
           height: 250,
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Text('Options', style: TextStyle(fontSize: 24)),
+                const Text('Options', style: TextStyle(fontSize: 24)),
                 CheckboxListTile(
                   title: const Text('Option 1'),
                   value: OptionManager.isTrue(

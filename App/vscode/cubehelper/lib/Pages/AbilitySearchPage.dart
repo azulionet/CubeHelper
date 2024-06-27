@@ -1,31 +1,33 @@
 import 'package:flutter/material.dart';
 
 class AbilitySearchPage extends StatelessWidget {
+  const AbilitySearchPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('ability'),
+        title: const Text('ability'),
       ),
-      body: Center(
+      body: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const TextField(
+            TextField(
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'lfie life',
               ),
             ),
-            const SizedBox(height: 20),
-            const TextField(
+            SizedBox(height: 20),
+            TextField(
               obscureText: true,
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'lllllllll',
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
           ],
         ),
       ),
